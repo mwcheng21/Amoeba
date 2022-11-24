@@ -127,7 +127,7 @@ class Player:
     def _breaks_amoeba(self, x, y, periphery, amoeba_map):
         # check that all amoeba cells are connected
         isolated_neighbors = self.get_neighbors(x, y, amoeba_map)
-        queue = [isolated_neighbors[0]]
+        queue = [isolated_neighbors[0]] #todso heapq??
         copy_amoeba_map = deepcopy(amoeba_map)
         copy_amoeba_map[x][y] = 0
         visited = set()
