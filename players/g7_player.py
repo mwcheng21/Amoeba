@@ -222,8 +222,10 @@ class RakeFormation(Formation):
 
         #TODO: change ordering of moveable points
         #TODO: change ordering of retractable points, maybe based on distance to center of formation? mostly matters at the beginning
-        if self.phase == 0:
+
+        if self.phase == 0 or self.phase == 1:
             xStart, xEnd, yStart, yEnd = self._get_current_xy(amoebaMap)
+
             xOffset, yOffset = xStart, yStart
 
             previousPoints = self._get_formation(xOffset, yOffset, state, nCells)\
@@ -239,35 +241,35 @@ class RakeFormation(Formation):
                 # print("Using prev formation")
                 return previousPoints
 
-            idealPoints = self._get_formation(xOffset+1, yOffset, state, nCells)\
+            idealPoints = self._get_formation(xOffset+1+int(xOffSetCompleted), yOffset, state, nCells)\
                 + [(xOffset+i, 50) for i in range(1, 9)]\
                 + self._get_formation(xOffset+9, yOffset, state, nCells)
 
             idealPoints = remove_duplicates(idealPoints)
             return idealPoints
-        elif self.phase == 1:
-            xStart, xEnd, yStart, yEnd = self._get_current_xy(amoebaMap)
-            xOffset, yOffset = xStart, yStart
+        # elif self.phase == 1:
+        #     xStart, xEnd, yStart, yEnd = self._get_current_xy(amoebaMap)
+        #     xOffset, yOffset = xStart, yStart
 
-            previousPoints = self._get_formation(xOffset, yOffset, state, nCells)\
-                + [(xOffset+i, 50) for i in range(0, 8)]\
-                + self._get_formation(xOffset+8, yOffset, state, nCells)
+        #     previousPoints = self._get_formation(xOffset, yOffset, state, nCells)\
+        #         + [(xOffset+i, 50) for i in range(0, 8)]\
+        #         + self._get_formation(xOffset+8, yOffset, state, nCells)
 
-            previousPoints = remove_duplicates(previousPoints)[:nCells]
-            totalCorrectPoints = sum([1 for point in previousPoints if point in amoebaPoints])
-            # print(xStart, xEnd, yStart, yEnd)
-            # print("totalCorrectPoints: ", totalCorrectPoints)
-            # print(len(previousPoints))
-            if totalCorrectPoints < len(previousPoints)*0.99:#
-                # print("Using prev formation")
-                return previousPoints
+        #     previousPoints = remove_duplicates(previousPoints)[:nCells]
+        #     totalCorrectPoints = sum([1 for point in previousPoints if point in amoebaPoints])
+        #     # print(xStart, xEnd, yStart, yEnd)
+        #     # print("totalCorrectPoints: ", totalCorrectPoints)
+        #     # print(len(previousPoints))
+        #     if totalCorrectPoints < len(previousPoints)*0.99:#
+        #         # print("Using prev formation")
+        #         return previousPoints
 
-            idealPoints = self._get_formation(xOffset+1, yOffset, state, nCells)\
-                + [(xOffset+i, 50) for i in range(1, 9)]\
-                + self._get_formation(xOffset+9, yOffset, state, nCells)
+        #     idealPoints = self._get_formation(xOffset+1, yOffset, state, nCells)\
+        #         + [(xOffset+i, 50) for i in range(1, 9)]\
+        #         + self._get_formation(xOffset+9, yOffset, state, nCells)
 
-            idealPoints = remove_duplicates(idealPoints)
-            return idealPoints
+        #     idealPoints = remove_duplicates(idealPoints)
+        #     return idealPoints
         elif self.phase == 2:
             xStart, xEnd, yStart, yEnd = self._get_current_xy(amoebaMap)
             xOffset, yOffset = xStart, yStart #self._get_midpoint(yStart, yEnd)
@@ -449,6 +451,13 @@ class RakeFormation(Formation):
         :return: A list of the formation points
         '''
         nChunks = min(nCells // 7, 33)
+
+        print('nChuncks: ', nCells)
+        print('x: ', x)
+        print('yOffSet: ', yOffset)
+        print('State: ', state)
+
+        
         formation = []
         for i in range(nChunks):
             formation += self._generate_chunk(x, yOffset)
@@ -545,7 +554,13 @@ class Player:
             nAdjacentBacteria += 1
             current_percept.amoeba_map[i][j] = 1
 
-        phase, count, isMoving, info = self.decode_info(info)
+        phase, count, isMoving, xOffSetCompleted, info = self.decode_info(info)
+        
+        #update xOffSetCompleted
+        if xOffSetCompleted == 1 \
+            and (last_percept.amoeba_map != current_percept.amoeba_map):
+            xOffSetCompleted = 0
+
         # update byte of info
         BACTERIA_RATIO = 0.001 #TODO, maybe based on size of total amoeba and size of periphery??
         percent_bacteria = nAdjacentBacteria / len(current_percept.periphery)
@@ -566,7 +581,7 @@ class Player:
         goalFormation = self.formation.get_next_formation_points(current_percept)
         nCells = sum([sum(row) for row in current_percept.amoeba_map])
         firstCells = remove_duplicates(goalFormation)[:nCells]
-        # plot_points_helper(firstCells)
+        plot_points_helper(firstCells)
         allRetractable = self.formation.get_all_retractable_points(firstCells, current_percept)
 
         allMovable = self.find_movable_cells(allRetractable, current_percept.periphery, current_percept.amoeba_map, current_percept.bacteria)
@@ -583,7 +598,7 @@ class Player:
         # else:
         #     isMoving = 1
 
-        info = self.encode_info(phase, count, isMoving, info)
+        info = self.encode_info(phase, count, isMoving, xOffSetCompleted, info)
 
         return retract, movable, info
 
@@ -622,32 +637,33 @@ class Player:
 
         return out
 
-    def encode_info(self, phase: int, count: int, isMoving: int, info: int) -> int:
+    def encode_info(self, phase: int, count: int, isMoving: int, xOffsetCompleted: int, info: int) -> int:
         """Encode the information to be sent
             Args:
                 phase (int): 2 bits for the current phase of the amoeba
                 count (int): 3 bits for the current count of the running density
                 isMoving (int): 1 bit for whether the amoeba is getting into position or not
-                info (int): 2 bits other info, still TODO
+                xOffsetCompleted (int): 1 bit for whether the amoeba has constructed this offset.
+                info (int): 1 bit other info, still TODO
             Returns:
                 int: the encoded information as an int
         """
         assert phase < 4
         info = 0
-        info_str = "{:02b}{:03b}{:01b}{:02b}".format(phase, count, isMoving, info)
+        info_str = "{:02b}{:03b}{:01b}{:01b}{:01b}".format(phase, count, isMoving, xOffsetCompleted, info)
 
         return int(info_str, 2)
 
-    def decode_info(self, info: int) -> (int, int, int, int):
+    def decode_info(self, info: int) -> (int, int, int, int, int):
         """Decode the information received
             Args:
                 info (int): the information received
             Returns:
-                Tuple[int, int, int, int]: phase, count, isMoving, info, the decoded information as a tuple
+                Tuple[int, int, int, int, int]: phase, count, isMoving, xOffsetCompleted, info, the decoded information as a tuple
         """
         info_str = "{0:b}".format(info).zfill(8)
 
-        return int(info_str[0:2], 2), int(info_str[2:5], 2), int(info_str[5:6], 2), int(info_str[6:8], 2)
+        return int(info_str[0:2], 2), int(info_str[2:5], 2), int(info_str[5:6], 2), int(info_str[6:7], 2), int(info_str[7:8], 2)
 
 
 
