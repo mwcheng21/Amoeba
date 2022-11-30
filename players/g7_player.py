@@ -477,6 +477,56 @@ class RakeFormation(Formation):
         chunk = [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (0, 2), (1, 2)]
         return [wrap_point(x + xOffset, y + yOffset) for x, y in chunk]
 
+    def _check_if_last_chunk_moved(self, xOffset, yOffset, amoebaMap):
+        '''
+        Checks if the chunk at the given xOffset and yOffset has moved
+
+        :param xOffset: The xOffset
+        :param yOffset: The yOffset
+        :param amoebaMap: The amoeba map
+        :return: True if the chunk has moved, False otherwise
+        '''
+        chunk = self._generate_chunk(xOffset, yOffset)
+        points_below = [wrap_point(x + 3, y) for x, y in chunk[:3]]
+        last_chunk_moved = not all([amoebaMap[x][y] == 1 for x, y in points_below])
+
+        return last_chunk_moved
+
+    def _find_rear_edge(self, amoebaMap):
+        '''
+        Finds the leftmost x coordinate for which there is an amoeba cell
+        '''
+        for x in range(100):
+            if sum(amoebaMap[x]) > 0:
+                return x
+    
+    def _find_next_cell_to_move(self, amoebaMap):
+        '''
+        Finds the next cell to move
+
+        :param amoebaMap: The amoeba map
+        :return: The next cell to move
+        '''
+        rear_edge = self._find_rear_edge(amoebaMap)
+        for y in range(100):
+            if amoebaMap[rear_edge][y] == 1:
+                return rear_edge, y
+        
+        return None
+    
+    def _compare_cells_move_order(self, cellA, cellB):
+        '''
+        Compares the cells to determine which should move first
+
+        :param cellA: The first cell
+        :param cellB: The second cell
+        :return: negative number if cellA should move first, positive number if cellB should move first, 0 if they are equal
+        '''
+        if cellA[0] == cellB[0]:
+            return cellA[1] - cellB[1]
+
+        return cellA[0] - cellB[0]
+
 class SpaceCurveFormation(Formation):
 
     def __init__(self):
