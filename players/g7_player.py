@@ -215,6 +215,21 @@ class RakeFormation(Formation):
             return 2
         return phase
 
+    def _check_if_last_chunk_moved(self, xOffset, yOffset, amoebaMap):
+        '''
+        Checks if the chunk at the given xOffset and yOffset has moved
+
+        :param xOffset: The xOffset
+        :param yOffset: The yOffset
+        :param amoebaMap: The amoeba map
+        :return: True if the chunk has moved, False otherwise
+        '''
+        chunk = self._generate_chunk(xOffset, yOffset)
+        points_below = [wrap_point(x + 3, y) for x, y in chunk[:3]]
+        last_chunk_moved = not all([amoebaMap[x][y] == 1 for x, y in points_below])
+
+        return last_chunk_moved
+
     def get_next_formation_points(self, state, xOffSetCompleted):
         nCells = sum([sum(row) for row in state.amoeba_map])
         amoebaMap = state.amoeba_map
@@ -451,7 +466,6 @@ class RakeFormation(Formation):
         :return: A list of the formation points
         '''
         nChunks = min(nCells // 7, 33)
-
         
         formation = []
         for i in range(nChunks):
@@ -593,6 +607,10 @@ class Player:
         # else:
         #     isMoving = 1
 
+        xOffset, xEnd, yOffset, yEnd = self.formation._get_current_xy(current_percept.amoeba_map)
+        print('xOffset, xEnd, yOffset, yEnd: ', xOffset, xEnd, yOffset, yEnd)
+        if self.formation._check_if_last_chunk_moved(xOffset, yOffset, current_percept.amoeba_map):
+            xOffSetCompleted = 0
         info = self.encode_info(phase, count, isMoving, xOffSetCompleted, info)
 
         return retract, movable, info
