@@ -334,6 +334,41 @@ class RakeFormation(Formation):
         # Phase 3: 2 lines move inwards
         raise NotImplementedError
 
+    def get_n_moves(self, allRetracable, pointsToMoveTo, state, n_cells_can_move):
+        ''' 
+        Returns the points to retract and move so that len(pointsToMoveTo) == len(pointsToRetract)
+
+        :param allRetracable: A list of all points that can be retracted
+        :param pointsToMoveTo: A list of all points that need to be moved to
+        :param state: The current state
+        :param n_cells_can_move: The number of cells that can move based on the metabolism
+        :return: A tuple of the points to retract and the points to move to
+        '''
+        amoebaMapCopy = deepcopy(state.amoeba_map)
+        moveDups = [point for point in pointsToMoveTo if pointsToMoveTo.count(point) > 1]
+        validPointsToMoveTo = [point for i, point in enumerate(pointsToMoveTo) if point not in moveDups and pointsToMoveTo.index(point) == i]
+        allValidRetracable = []
+
+        #make n passes? does this work
+        for j in range(2):
+            for i, point in enumerate(allRetracable):
+                if point not in allValidRetracable and not breaks_amoeba(point, amoebaMapCopy):
+                    allValidRetracable.append(point)
+                    amoebaMapCopy[point[0]][point[1]] = 0
+
+        validPointsToMoveTo.sort(key = lambda x: 101*x[0] + x[1])
+
+        allValidRetracable = allValidRetracable[:n_cells_can_move]
+        validPointsToMoveTo = validPointsToMoveTo[:n_cells_can_move]
+
+        if len(allValidRetracable) > len(validPointsToMoveTo):
+            return allValidRetracable[:len(validPointsToMoveTo)], validPointsToMoveTo
+        elif len(allValidRetracable) < len(validPointsToMoveTo):
+            return allValidRetracable, validPointsToMoveTo[:len(allValidRetracable)]
+        else:
+            return allValidRetracable, validPointsToMoveTo
+
+
     def _get_midpoint(self, start, end):
         if end < start:
             #TODO: 44 -> 3 = midpt of (100-44 + 3-0)//2 = 28
@@ -492,40 +527,6 @@ class RakeFormation(Formation):
 
         return last_chunk_moved
 
-    def _find_rear_edge(self, amoebaMap):
-        '''
-        Finds the leftmost x coordinate for which there is an amoeba cell
-        '''
-        for x in range(100):
-            if sum(amoebaMap[x]) > 0:
-                return x
-    
-    def _find_next_cell_to_move(self, amoebaMap):
-        '''
-        Finds the next cell to move
-
-        :param amoebaMap: The amoeba map
-        :return: The next cell to move
-        '''
-        rear_edge = self._find_rear_edge(amoebaMap)
-        for y in range(100):
-            if amoebaMap[rear_edge][y] == 1:
-                return rear_edge, y
-        
-        return None
-    
-    def _compare_cells_move_order(self, cellA, cellB):
-        '''
-        Compares the cells to determine which should move first
-
-        :param cellA: The first cell
-        :param cellB: The second cell
-        :return: negative number if cellA should move first, positive number if cellB should move first, 0 if they are equal
-        '''
-        if cellA[0] == cellB[0]:
-            return cellA[1] - cellB[1]
-
-        return cellA[0] - cellB[0]
 
 class SpaceCurveFormation(Formation):
 
