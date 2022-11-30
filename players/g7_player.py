@@ -256,9 +256,9 @@ class RakeFormation(Formation):
                 # print("Using prev formation")
                 return previousPoints
 
-            idealPoints = self._get_formation(xOffset+1+int(xOffSetCompleted), yOffset, state, nCells)\
+            idealPoints = self._get_formation(xOffset+1, yOffset, state, nCells)\
                 + [(xOffset+i, 50) for i in range(1, 9)]\
-                + self._get_formation(xOffset+9, yOffset, state, nCells)
+                + self._get_formation(xOffset+9+int(xOffSetCompleted), yOffset, state, nCells)
 
             idealPoints = remove_duplicates(idealPoints)
             return idealPoints
@@ -564,11 +564,6 @@ class Player:
             current_percept.amoeba_map[i][j] = 1
 
         phase, count, isMoving, xOffSetCompleted, info = self.decode_info(info)
-        
-        #update xOffSetCompleted
-        if xOffSetCompleted == 1 \
-            and (last_percept.amoeba_map != current_percept.amoeba_map):
-            xOffSetCompleted = 0
 
         # update byte of info
         BACTERIA_RATIO = 0.001 #TODO, maybe based on size of total amoeba and size of periphery??
@@ -609,8 +604,12 @@ class Player:
 
         xOffset, xEnd, yOffset, yEnd = self.formation._get_current_xy(current_percept.amoeba_map)
         print('xOffset, xEnd, yOffset, yEnd: ', xOffset, xEnd, yOffset, yEnd)
-        if self.formation._check_if_last_chunk_moved(xOffset, yOffset, current_percept.amoeba_map):
-            xOffSetCompleted = 0
+        
+         #update xOffSetCompleted
+
+        xOffSetCompleted = 1 if (self.formation._check_if_last_chunk_moved(xOffset, yOffset, current_percept.amoeba_map)) else 0
+
+        
         info = self.encode_info(phase, count, isMoving, xOffSetCompleted, info)
 
         return retract, movable, info
