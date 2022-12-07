@@ -3,6 +3,8 @@ import numpy.typing as npt
 import logging
 from typing import Tuple, List
 from amoeba_state import AmoebaState
+import pstats
+import cProfile
 
 # ---------------------------------------------------------------------------- #
 #                               Helper Functions                               #
@@ -122,7 +124,7 @@ def decode_info(info: int) -> Tuple[int, int]:
 #                               Main Player Class                              #
 # ---------------------------------------------------------------------------- #
 
-TOOTH_SPACING = 2
+TOOTH_SPACING = 1
 SHIFTING_FREQUENCY = 6
 
 class Player:
@@ -340,7 +342,7 @@ class Player:
         
         move_teeth_binary = bin(self.move_teeth)[2:].zfill(1)
         x_position_binary = bin(self.x_position)[2:].zfill(7)
-        info = move_teeth_binary + x_position_binary
+        info = int(move_teeth_binary + x_position_binary, 2)
 
         return retract, move, info
 
