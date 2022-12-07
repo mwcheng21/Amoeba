@@ -158,7 +158,7 @@ class Player:
     def make_two_rakes(self, amoeba_size: int, x_position: int, move_teeth: int) -> npt.NDArray:
         formation = np.zeros((100, 100), dtype=np.int8)
         center_y = 50
-        spacing = self.tooth_space + 1
+        spacing = TOOTH_SPACING + 1
 
         stop_collision = lambda x: abs(x - (50 * round(x / 50)))
 
@@ -305,16 +305,14 @@ class Player:
         info_str = bin(info)[2:].zfill(8)
 
         # set to none to show that we don't store info across turns
-        self.move_teeth, self.x_position, self.tooth_space = None, None, None
+        self.move_teeth, self.x_position = None, None
 
-        self.move_teeth, self.x_position, self.tooth_space = int(info_str[0:1], 2), int(info_str[1:7], 2), int(info_str[7:8], 2)
+        self.move_teeth, self.x_position = int(info_str[0:1], 2), int(info_str[1:8], 2)
         move_teeth, x_position = self.move_teeth, self.x_position
 
         if self.is_square(current_percept):
             self.x_position = 50
             self.move_teeth = 1
-            self.tooth_space = 0 # Can change this to be 0 or 1 (Toggle between 1 space or 2 based on initial size)
-        self.tooth_space = 2 if self.tooth_space == 0 else 1
 
         while len(retract) == 0 and len(move) == 0:
             if self.move_teeth == 0:
@@ -341,10 +339,8 @@ class Player:
                     self.move_teeth = 1
         
         move_teeth_binary = bin(self.move_teeth)[2:].zfill(1)
-        x_position_binary = bin(self.x_position)[2:].zfill(6)
-        self.tooth_space = 0 if self.tooth_space == 2 else 1 # Remap to 0 or 1
-        tooth_space_binary = bin(self.tooth_space)[2:].zfill(1)
-        info = int(move_teeth_binary + x_position_binary + tooth_space_binary, 2)
+        x_position_binary = bin(self.x_position)[2:].zfill(7)
+        info = move_teeth_binary + x_position_binary
 
         return retract, move, info
 
