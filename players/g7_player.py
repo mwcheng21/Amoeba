@@ -124,7 +124,7 @@ def decode_info(info: int) -> Tuple[int, int]:
 #                               Main Player Class                              #
 # ---------------------------------------------------------------------------- #
 
-TOOTH_SPACING = 1
+TOOTH_SPACING = 2
 SHIFTING_FREQUENCY = 6
 
 class Player:
