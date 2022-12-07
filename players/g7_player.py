@@ -3,8 +3,6 @@ import numpy.typing as npt
 import logging
 from typing import Tuple, List
 from amoeba_state import AmoebaState
-import pstats
-import cProfile
 
 # ---------------------------------------------------------------------------- #
 #                               Helper Functions                               #
@@ -124,7 +122,7 @@ def decode_info(info: int) -> Tuple[int, int]:
 #                               Main Player Class                              #
 # ---------------------------------------------------------------------------- #
 
-TOOTH_SPACING = 1
+TOOTH_SPACING = 2
 SHIFTING_FREQUENCY = 6
 
 class Player:
@@ -160,7 +158,7 @@ class Player:
     def make_two_rakes(self, amoeba_size: int, x_position: int, move_teeth: int) -> npt.NDArray:
         formation = np.zeros((100, 100), dtype=np.int8)
         center_y = 50
-        spacing = TOOTH_SPACING + 1
+        spacing = self.tooth_space + 1
 
         stop_collision = lambda x: abs(x - (50 * round(x / 50)))
 
@@ -315,6 +313,8 @@ class Player:
         if self.is_square(current_percept):
             self.x_position = 50
             self.move_teeth = 1
+            self.tooth_space = 0 # Can change this to be 0 or 1 (Toggle between 1 space or 2 based on initial size)
+        self.tooth_space = 2 if self.tooth_space == 0 else 1
 
         while len(retract) == 0 and len(move) == 0:
             if self.move_teeth == 0:
@@ -342,6 +342,7 @@ class Player:
         
         move_teeth_binary = bin(self.move_teeth)[2:].zfill(1)
         x_position_binary = bin(self.x_position)[2:].zfill(6)
+        self.tooth_space = 0 if self.tooth_space == 2 else 1 # Remap to 0 or 1
         tooth_space_binary = bin(self.tooth_space)[2:].zfill(1)
         info = int(move_teeth_binary + x_position_binary + tooth_space_binary, 2)
 
